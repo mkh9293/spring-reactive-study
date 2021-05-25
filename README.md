@@ -13,11 +13,11 @@
 * CompletionStage
 * ListenableFuture
 
-둘다 비동기 작업이 완료된 후 처리를 위해 제공된 인터페이스로, spring 4 에서는 하위호환성을 위해 Future 인터페이스를 확장한 ListenableFuture 인터페이스를 제공하였고, 비동기 rest api 용도의 라이브러리인 AsyncRestTemplate 클래스의 리턴 타입으로도 사용된다.
+둘다 비동기 작업 완료 후 처리를 위해 제공되는 인터페이스로, spring 4 에서는 하위호환성을 위해 Future 인터페이스를 확장한 ListenableFuture 인터페이스를 제공하였고 비동기 rest api 호출 용도의 라이브러리인 AsyncRestTemplate 클래스의 리턴 타입으로도 사용된다.
 
-ListenableFuture 인터페이스는 성공, 실패에 대한 콜백을 등록하여 사용되는데 결과에 대한 처리를 위해 콜백 코드를 등록하면서 콜백지옥을 경험하게 된다.
+ListenableFuture 인터페이스는 성공, 실패에 대한 콜백을 등록하여 사용하는데 결과에 대한 처리를 위해 콜백 코드를 등록해야하고 콜백 코드가 추가되면서 콜백지옥을 경험하게 될 수도 있다.
 
-콜백 지옥을 피하기 위해 CompletionStage 인터페이스가 추가되었는데, 해당 인터페이스는 함수형 스타일로 코드를 작성할 수 있다. 다음 비교 코드를 보자.
+콜백 지옥을 피하기 위해 CompletionStage 인터페이스가 추가되었는데, 이 인터페이스는 함수형 스타일로 코드를 작성할 수 있다. 다음 비교 코드를 보자.
 
 **ListenableFutre 를 이용한 코드.**
 
@@ -63,10 +63,9 @@ ListenableFutureTask listenableFutureTask = new ListenableFutureTask(task);
 ```
 
 
-
 api 불일치 문제에 대한 내용을 이해하기 위해 ListenableFuture, CompletionStage 에 대해 잠시 살펴보았고 다시 불일치 문제로 돌아오면, spring 4 에서는 비동기 api 통신을 위해 AsyncRestTemplate 클래스를 제공해주었는데 해당 클래스의 리턴타입이 **ListenableFutre 인터페이스이고 위에서 확인했다시피 콜백지옥으로 코드가 지저분해지게 된다**. 그래서 보통 CompletionStage 인터페이스로 변환하여 사용하는 경우가 많다. 
 
-이렇게 변환하여 사용하는 경우에 서로 다른 인터페이스 2가지를 사용하게 되고 api 리턴 타입의 불일치가 발생하므로 이를 해결하기 위해 주간에 새로운 유틸성 클래스를 생성해주어야 한다.
+이렇게 변환하여 사용하는 경우에 서로 다른 인터페이스 2가지를 사용하게 되고 api 리턴 타입의 불일치가 발생하므로 이를 해결하기 위해 새로운 유틸성 클래스를 생성해주어야 한다.
 
 **AsyncAdapters \(api 불일치를 해결하기 위한 아답터 클래스\)**
 
@@ -104,10 +103,7 @@ public final class AsyncAdapters {
 위와 같이 유틸성 클래스를 추가하는 경우, 사용자가 직접 코드를 작성하게 되는데 이때 버그가 유입될 가능성이 크고 어떤 문제점이 발생할 여지가 있다.
 
 
-
-
-
-#### 풀 방식과 푸시 방식
+### 풀 방식과 푸시 방식
 
 #### 흐름 제어
 

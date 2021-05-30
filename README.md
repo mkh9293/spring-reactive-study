@@ -1,19 +1,23 @@
+---
+description: '하나의 프로젝트에서 여러개의 라이브러리를 사용했을 때의 문제점과 배압 제어, 리액티브 스트림 스펙에 대해 알아보자.'
+---
+
 # 스트림의 새로운 표준 - 리액티브 스트림
 
 ## 모두를 위한 반응성
 
-이 장에서는 리액티브 스트림 스펙을 따라 구현된 라이브러리를 이용해야 하는 이유에 대해 설명한다.
+이 장에서는 리액티브 스트림 스펙 따라 구현된 라이브러리를 이용해야 하는 이유에 대해 설명한다.
 
 ### API 불일치 문제
 
 비동기 논블로킹 작업을 위한 여러가지 라이브러리가 있는데, 하나의 작업단위에 여러 라이브러리가 같이 존재하는 경우 복잡해진다.
 
-예를 들어, 자바 코어 라이브러리에 존재하는 비슷한 개념의 인터페이스가 아래와 같이 2가지가 존재하고 하나의 코드에서 사용하는 경우가 있다고 하자.
+예를 들어, **하나의 코드에서 비슷한 개념의 인터페이스 2가지를 사용하는 경우**가 있다고 하자.
 
 * CompletionStage
 * ListenableFuture
 
-둘다 비동기 작업 완료 후 작업 처리를 위해 제공되는 인터페이스로, spring 4 에서는 하위호환성을 위해 Future 인터페이스를 확장한 ListenableFuture 인터페이스를 제공하였고 비동기 rest api 호출 용도의 라이브러리인 AsyncRestTemplate 클래스의 리턴 타입으로도 사용된다.
+**둘다 비동기 작업 완료 후 작업 처리를 위해 제공되는 인터페이스**로, spring 4 에서는 하위호환성을 위해 Future 인터페이스를 확장한 ListenableFuture 인터페이스를 제공하였고 비동기 rest api 라이브러리인 AsyncRestTemplate 클래스의 리턴 타입으로도 사용된다.
 
 ListenableFuture 인터페이스는 성공, 실패에 대한 콜백을 등록하여 사용하는데 결과에 대한 처리를 위해 콜백 코드를 등록해야하고 콜백 코드가 추가되면서 콜백지옥을 경험하게 될 수도 있다.
 
@@ -101,15 +105,15 @@ public final class AsyncAdapters {
 }
 ```
 
-위와 같이 유틸성 클래스를 추가하는 경우, 사용자가 직접 코드를 작성하게 되는데 이때 버그가 유입될 가능성이 크고 자신도 모르는 사이에 문제점이 발생할 여지가 있다.
+위와 같이 유틸성 클래스를 추가하는 경우, 사용자가 직접 코드를 작성하게 되는데 이때 **버그가 유입될 가능성이 크고** 자신도 모르는 사이에 문제점이 발생할 여지가 있다.
 
-### ------
+### 
 
 ### 풀 방식과 푸시 방식
 
-> 푸시 방식 : 퍼블리셔가 자신을 구독하고 있는 구독자에게 직접 데이터를 전송해주는 방식 \(생산자가 소비자에게 내\)
+> 푸시 방식 : 퍼블리셔가 자신을 구독하고 있는 구독자에게 직접 데이터를 전송해주는 방식 \(생산자 -&gt; 소비자\)
 >
-> 풀 방식 : 구독자가 퍼블리셔에게서 데이터를 요청해서 받아오는 방식  \(실제 주문 요청이 있을때 생산하여 제공. 소비자가 생성자에게로 요청\)
+> 풀 방식 : 구독자가 퍼블리셔에게서 데이터를 요청해서 받아오는 방식  \(실제 주문 요청이 있을때 생산하여 제공. 소비자 -&gt; 생성자\)
 
 이 절은 예제코드로 풀 방식과 푸시 방식의 차이점에 대해 설명한다.
 
@@ -137,6 +141,7 @@ public class Puller {
 			Queue<Item> queue,
 			CompletableFuture resultFuture,
 			int count) {
+			// dbClient 의 getNextAfterId() 메소드는 내부에 Flowable 로 데이터를 생산.
 		dbClient.getNextAfterId(elementId)
 		        .thenAccept(item -> {
 							// getNextAfterId() 의 결과가 리턴될때까지 기다린 후 실행되며, 10까지 +1 씩 상승/반
@@ -155,9 +160,26 @@ public class Puller {
 
 	boolean isValid(Item item) {...}
 }
+
+... 
+	public CompletionStage<Item> getNextAfterId(String id) {
+		CompletableFuture<Item> future = new CompletableFuture<>();
+
+		Flowable.just(new Item("" + (Integer.parseInt(id) + 1)))
+		        .delay(500, TimeUnit.MILLISECONDS)
+		        .subscribe(future::complete);
+
+		return future;
+	}
 ```
 
 서비스\(Puller\) 에서 데이터베이스\(dbClient\) 를 호출할때는 비동기 논블로킹으로 호출하였지만, count\(10\) 를 모두 처리할때는 +1씩 올리면서 코드를 반복한다. 해당 과정은 thenAccept 부분에서 블로킹 되므로 **서비스에서 데이터베이스로의 요청\(pull\) 시간** 때문에 비효율적인 코드이다. 
+
+![](.gitbook/assets/2021-05-30-10.52.31.png)
+
+
+
+
 
 **예제코드2** \(순수한 풀 방식 개선\)
 
@@ -203,9 +225,29 @@ public class Puller {
 	boolean isValid(Item item) {...}
 }
 
+...
+public CompletionStage<List<Item>> getNextBatchAfterId(String id, int count) {
+		CompletableFuture<List<Item>> future = new CompletableFuture<>();
+
+		Flowable.range(Integer.parseInt(id) + 1, count)
+		        .map(i -> new Item("" + i))
+		        .collectInto(new ArrayList<Item>(), ArrayList::add)
+		        .delay(1000, TimeUnit.MILLISECONDS)
+		        .subscribe(future::complete);
+
+		return future;
+	}
+
+
 ```
 
 첫 예제의 순수한 풀 방식과의 차이점은 10개를 한번에 배치처리 한다는 점이다. 하지만 데이터베이스에서 10개를 모두 처리할때까지 thenAccept 함수에서 블로킹 되며 여전히 클라이언트는 대기시간하는 존재한다.
+
+
+
+![](.gitbook/assets/2021-05-30-10.59.41.png)
+
+
 
 **예제코드3** \(푸시방식\)
 
@@ -237,9 +279,9 @@ public class Puller {
 
 ```
 
-count 를 모두 처리할때까지 블로킹 되는 구간이 없다. 데이터베이스에서 처리가 완료되는 즉시 서비스로 푸시를 해주고 서비스에서는 원하는 count 개수가 나올때까지 데이터베이스가 전송해주는 값을 받아오므로, **데이터베이스에게 데이터를 요청하는 요청 시간이 추가적으로 들지 않는다.**
+count 를 모두 처리할때까지 블로킹 되는 구간이 없다. 데이터베이스에서 처리가 완료되는 즉시 서비스로 푸시를 해주고 서비스에서는 원하는 count 개수가 나올때까지 데이터베이스가 전송해주는 값을 받아오므로, **데이터베이스에게 데이터를 요청하는 요청 시간이 추가적으로 들지 않지만, 데이터베이스는 원소를 계속해서 생성할 위험이 존재한다.**
 
-### ------
+![](.gitbook/assets/2021-05-30-11.00.07.png)
 
 ### 흐름 제어
 
@@ -281,7 +323,7 @@ count 를 모두 처리할때까지 블로킹 되는 구간이 없다. 데이터
 
 위의 큐와는 다르게 메세지를 삭제하는 것이 아닌 블로킹하는 큐. 해당 큐는 비동기 동작을 무시한다. 큐의 한계에 도달하면  차단이 시작되고 컨슈머측에서 여유공간이 생길때까지 차단 상태가 된다. 가장 느린 컨슈머 때문에 다른 컨슈머들도 차단 상태가 되기 때문에 비동기의 이점이 사라진다.
 
-### ------
+### 
 
 ### 해결책
 
@@ -289,9 +331,7 @@ count 를 모두 처리할때까지 블로킹 되는 구간이 없다. 데이터
 
 ### 
 
-### ------
-
-### 리액티브 스트림의 기본 스펙
+## 리액티브 스트림의 기본 스펙
 
 Publisher, Subscriber, Subscription, Processor 네가지 인터페이스가 존재.
 
@@ -608,7 +648,7 @@ puller 에서 처음 풀 하고나서 구독자 등록 후 부터는 푸시를 �
 
 
 
-### ------
+
 
 ### 리액티브 스트림 동작해보기
 

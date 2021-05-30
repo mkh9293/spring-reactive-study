@@ -433,9 +433,7 @@ Puller puller = new Puller();
 		      });
 ```
 
- 2. dbClient 객체의 getStreamOfItems\(\) 메소드를 호출 \(비동기 논블로킹\) 후
-
-TakeFilterOperator 클래스를 생성한다. 
+ 2. dbClient 객체의 getStreamOfItems\(\) 메소드를 호출 \(비동기 논블로킹\) 후 TakeFilterOperator 클래스를 생성한다. 
 
 getStreamOfItems\(\) 메소드는 Publisher 인터페이스의 구현체인 Flowable 추상클래스이기 때문에 Publisher 의 특성에따라 구독이 되기전까지 데이터를 발행하지 않는다.
 

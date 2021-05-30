@@ -665,7 +665,7 @@ Publisher 와 Subscriber 를 혼합한 개념으로 두 스펙 사이에 Process
 ![](.gitbook/assets/2021-05-30-2.48.26.png)
 
 * Subscriber 를 여러개 등록하고 특정 조건 맞는 Subscriber 에게만 결과를 전송하고 싶을때
-* publisher, subscriber 상관없이 처리하고 싶을때 \(코드1 참\)
+* publisher, subscriber 상관없이 처리하고 싶을때 \(코드1\)
 * 다수의 subscriber 에게 데이터를 같이 전달해주고 싶을때 \(코드2\)
 
 

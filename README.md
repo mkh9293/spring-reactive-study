@@ -179,8 +179,6 @@ public class Puller {
 
 
 
-
-
 **예제코드2** \(순수한 풀 방식 개선\)
 
 ```java

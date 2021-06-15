@@ -51,13 +51,51 @@ concnatWith 연산자의 내부코드를 보면 변수의 타입을 FluxArray -&
 
 ### 구독 단계
 
+Publisher 를 구독할 때 발생.
+
+![](.gitbook/assets/2021-06-15-11.44.41.png)
 
 
 
+여러 연산자들이 조립되어 있는 경우 제일 마지막의 연산자부터 구독을 시작하고 subscriber 를 만들게 되면 해당 subscriber 를 연쇄적으로 다음 연산자의 subscriber 로 전달한다. 최종적으로 마지막 연산자까지 subscriber 를 전달 완료한 경우에 데이터를 송신하기 시작한다.
+
+![filter -&amp;gt; map -&amp;gt; array &#xC21C;&#xC73C;&#xB85C; subscriber &#xC804;&#xD30C;](.gitbook/assets/2021-06-16-12.07.03.png)
+
+
+
+위 예시코드처럼 subscriber 가 전파되면 결국에는 아래와 같이 arrayflux 가 map, filter 를 모두 감싼 형태가 된다.
+
+![ArraySubscriber &#xAC00; &#xBAA8;&#xB450; &#xCD5C;&#xC885;&#xC801;&#xC73C;&#xB85C; &#xBAA8;&#xB450;&#xB97C; &#xD3EC;&#xD568;&#xD55C; &#xC0C1;&#xD0DC;](.gitbook/assets/2021-06-16-12.08.47%20%281%29.png)
+
+![](.gitbook/assets/2021-06-15-11.49.34.png)
+
+filterFlux -&gt; mapFlux -&gt; sourceFlux 순으로 subscriber 가 전달되며 내부적으로 마지막인 sourceFlux 의 subscribe 가 호출되면 데이터를 송신하기 시작.
 
 
 
 ### 런타임 단계
+
+구독 단계에서 subscriber 가 filter -&gt; map -&gt; source 순으로 전파된다고 했다.
+
+source 까지 subscriber 가 전파되면 onSubscriber\(\) 메소드가 차례대로 호출되고 \(source -&gt; map -&gt; filter\)
+
+onSubscribe\(\) 메소드가 호출된 후 부터 request\(\) 메소드가 호출이 되는데 다시 역순으로 호출 된다 \(filter -&gt; map -&gt; source\) 
+
+
+
+아래 예시코드와 같이 모든 구독자가 요청한 수요\(request\)를 통과한 후에 실제 데이터를 보내기 시작한다.
+
+![](.gitbook/assets/2021-06-16-1.05.27.png)
+
+이러한 런타임 과정에서 불필요한 신호 처리 횟수를 줄인다.
+
+![](.gitbook/assets/2021-06-16-1.11.02.png)
+
+1 의 길이는 1 보다 크지 않기 때문에 filter.onNext\(1\) 신호를 호출하지 않는다.
+
+![](.gitbook/assets/2021-06-16-1.12.05.png)
+
+
 
 ## 리액터에서 스레드 스케줄링 모델
 

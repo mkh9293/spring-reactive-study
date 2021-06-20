@@ -151,6 +151,28 @@ publishOn\(\) 은 내부적으로 큐를 가지고 있고 해당 큐로 부터 �
 
 ### subscribeOn 연산자
 
+publishOn 은 onNext, onComplete, onError 메소드를 처리할 스레드를 지정하는 반면,
+
+subscribeOn 은 onSubscribe, publisher 의 subscribe\(\) 메소드를 처리할 스레드를 지정할때 사용.
+
+
+
+아래의 예시코드와 그 결과를 보면서 확인.
+
+![&#xC608;&#xC2DC;&#xCF54;&#xB4DC;](.gitbook/assets/2021-06-20-11.29.58.png)
+
+
+
+결과
+
+![](.gitbook/assets/2021-06-20-11.31.50.png)
+
+1. 예시코드의 .subscribe\(\) 메소드가 실행되면서, 맨 위 2줄과 같이 subscribeOn 메소드가 메인 스레드에서 실행
+2. subscribeOn\(\) 메소드는 업스트림에 대해서도 영향을 끼친다. \(subscribeOn 보다 위에 조립된 연산자들에게도 영향을 끼친다.\) 
+3. 그리고 subscribeOn\(\) 메소드는 publisher 의 subscribe\(\) 의 스레드를 조정한다고 했다. 이 말은 publisher 의 subscribe\(\) 가 호출됨과 동시에 
+
+
+
 ### parallel 연산자
 
 ### Scheduler

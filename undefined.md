@@ -153,13 +153,23 @@ publishOn\(\) 은 내부적으로 큐를 가지고 있고 해당 큐로 부터 �
 
 publishOn 은 onNext, onComplete, onError 메소드를 처리할 스레드를 지정하는 반면,
 
-subscribeOn 은 onSubscribe, publisher 의 subscribe\(\) 메소드를 처리할 스레드를 지정할때 사용.
+subscribeOn 은 "구독 시간 워커와 함께 런타임 워커를 부분적으로 지정"
+
+구독 시간 워커 : onSubscribe\(\), subscribe\(\) 메소드를 처리할 스레드를 지정할때 사용.
+
+런타임 워커를 부분적으로 지정 : 구독시간워커를 통해서 실행된 메소드로부터 데이터가 방출되는 시점의 onNext\(\) 는 구독시간워커의 스레드와 동일한 스레드에서 실행된다. 
 
 
 
 아래의 예시코드와 그 결과를 보면서 확인.
 
 ![&#xC608;&#xC2DC;&#xCF54;&#xB4DC;](.gitbook/assets/2021-06-20-11.29.58.png)
+
+{% hint style="info" %}
+참고로 subscribeOn\(\) 메소드는 업스트림에 대해서도 영향을 끼친다. 
+
+\(subscribeOn 보다 위에 조립된 연산자들에게도 영향을 끼친다는.\) 
+{% endhint %}
 
 
 
@@ -168,8 +178,9 @@ subscribeOn 은 onSubscribe, publisher 의 subscribe\(\) 메소드를 처리할 
 ![](.gitbook/assets/2021-06-20-11.31.50.png)
 
 1. 예시코드의 .subscribe\(\) 메소드가 실행되면서, 맨 위 2줄과 같이 subscribeOn 메소드가 메인 스레드에서 실행
-2. subscribeOn\(\) 메소드는 업스트림에 대해서도 영향을 끼친다. \(subscribeOn 보다 위에 조립된 연산자들에게도 영향을 끼친다.\) 
-3. 그리고 subscribeOn\(\) 메소드는 publisher 의 subscribe\(\) 의 스레드를 조정한다고 했다. 이 말은 publisher 의 subscribe\(\) 가 호출됨과 동시에 
+2. subscribeOn\(\), request\(\) 는 subscribeOn 에서 지정된 스레드에서 실행
+3. 부분적으로 onNext\(1...3\), onComplete\(\) 가 SUB-1 스레드에서 실행된 이유는 위에서 설명함. \(Subscription.request\(\) 호출 스레드와 동일한 스레드에서 실행됨\)
+4.  나머지 onNext, onComplete 는 예상한대로 PUB-2 에서 실행됨.
 
 
 

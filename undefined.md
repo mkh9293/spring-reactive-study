@@ -121,23 +121,19 @@ publishOn, subscribeOn, parallel, Scheduler 가 있다.
 
 parallel-scheduler 라는 이름의 스케줄러를 만들고 4개의 스레드를 생성.
 
-publishOn\(s\) 부터는 parallel-scheduler 스케쥴러에서 스레드를 가져다가 작업을 진행한다.
+publishOn\(s\) 연산자 부터는 parallel-scheduler 스케쥴러에서 스레드를 가져다가 작업을 진행한다.
 
 
 
-publishOn\(\) 은 내부적으로 큐를 가지고 있고 해당 큐로 부터 데이터를 꺼내와 작업을 처리하기 때문에 순서가 동일하다.
+publishOn\(\) 은 내부적으로 큐를 가지고 있고 해당 큐로 부터 데이터를 꺼내와 작업을 처리하기 때문에 처리 순서가 보장된다.
 
 ![&#xC6D0;&#xC18C;&#xAC00; &#xB4E4;&#xC5B4;&#xC628; &#xC21C;&#xC11C;&#xB300;&#xB85C; &#xD050;&#xC5D0;&#xC11C; &#xB370;&#xC774;&#xD130; &#xCC98;&#xB9AC;](.gitbook/assets/2021-06-20-9.11.05.png)
-
-
 
 
 
 ### publishOn 연산자를 이용한 병렬 처리
 
 위 그림을 보면 publishOn 을 이용하면 동기적으로 처리되는것 처럼 보이지만, publishOn 연산자를 적용한 시점부터는 다른 스레드에서 실행되기 때문에 병렬적으로 처리된다.
-
- 
 
 ![](.gitbook/assets/2021-06-20-9.33.35.png)
 
@@ -152,6 +148,8 @@ publishOn\(\) 은 내부적으로 큐를 가지고 있고 해당 큐로 부터 �
 ### subscribeOn 연산자
 
 publishOn 은 onNext, onComplete, onError 메소드를 처리할 스레드를 지정하는 반면,
+
+subscribeOn 은 onSubscribe\(\), subscribe\(\) 를 처리할 스레드를 지정.
 
 subscribeOn 은 "구독 시간 워커와 함께 런타임 워커를 부분적으로 지정"
 
@@ -168,7 +166,7 @@ subscribeOn 은 "구독 시간 워커와 함께 런타임 워커를 부분적으
 {% hint style="info" %}
 참고로 subscribeOn\(\) 메소드는 업스트림에 대해서도 영향을 끼친다. 
 
-\(subscribeOn 보다 위에 조립된 연산자들에게도 영향을 끼친다는.\) 
+\(subscribeOn 보다 위에 조립된 연산자들에게도 영향을 끼친다는뜻.\) 
 {% endhint %}
 
 
@@ -186,15 +184,173 @@ subscribeOn 은 "구독 시간 워커와 함께 런타임 워커를 부분적으
 
 ### parallel 연산자
 
+![parrallel &#xC5F0;&#xC0B0;&#xC790;](.gitbook/assets/2021-06-26-10.21.50.png)
+
+parralle\(\) 연산자 적용 시, cpu 코어 수 만큼의 Flux 가 병렬로 생성되고 \(ParrallelFlux 타입으로 변환됨.\)
+
+실제 동작은 runOn\(\) 연산자를 통해서 실행된다.
+
+
+
+Flux publisher 를 병렬적으로 처리하기 위해 사용한다. \(내부에서는 FluxPublishOn 클래스가 동작한다\)
+
+parrallel\(\) 연산자를 추가하기만 하면 병렬 동작 x. \(Flux 퍼블리셔를 ParrallelFlux 타입으로 변경시키고 하위 연산자들을 ParallelFlux 로 동작하도록 변경한다.\)
+
+runOn\(\) 연산자를 추가해야 병렬적으로 동작하기 시작. \(ParrallelFlux 를 상속받은 ParrallelRunOn 퍼블리셔가 실제 병렬동작을 실행함\)
+
+
+
+ParallelRunOn 퍼블리셔의 subscribe\(\) 메소드 내부에서 전달받은 scheduler 를 전달.
+
+![](.gitbook/assets/2021-06-26-10.38.13.png)
+
+
+
+{% hint style="info" %}
+parrallell\(\).runOn\(...\) 연산자와 publishOn\(Schedulers.parrallel\(\)\) 의 차이점.
+
+
+
+parrallel\(\) 연산자는 Flux 를 병렬적으로 생성하기 때문에 데이터 생성 시 순서가 보장되지 않지만,
+
+publishOn 연산자는 이전 업스트림에서의 데이터 생성 순서는 보장됨.
+
+그리고 publishOn 연산자는 Mono 에서도 사용가능하다.
+{% endhint %}
+
+
+
 ### Scheduler
 
-### 리액터 컨텍스
+병렬 처리를 진행하기 위해 스케줄러를 지정할 수 있다.
+
+3가지 주요한 스케줄러가 있음.
+
+1. SingleScheduler \(Schedulers.single\(\)\)
+2. ParallelScheduler \(Schedulers.parallel\(\)\)
+3. ElasticScheduler \(Schedulers.elastic\(\)\)
+
+
+
+SingleScheduler 는 하나의 단일 스레드를 추가하여 작업을 처리할 때 사용. \(사용 확률이 낮음\)
+
+ParallelScheduler 는 고정된 스레드 풀을 기반으로 스레드를 사용함. \(cpu 의 코어 수\)
+
+ElasticScheduler 는 필요 시 스레드를 무한정 증가시키며 블로킹 작업에 사용한다.
+
+
+
+### 리액터 컨텍스트
+
+리액터 컨텍스트를 이용하면 리액터 스트림의 처리흐름 내부에서 언제든지 데이터에 접근 가능하며,
+
+비동기 병렬스레드 환경에서도 문제없이 사용가능하다.
+
+
+
+webflux 의 처리흐름은 Mono, Flux 로 부터 시작되며 작업 흐름이 끝날때까지\(구독 되기전까지\) 스트림은 이어져 있다. \(마치 올가미처럼 ..\)
+
+\(또한 연결된 스트림을 따라 데이터를 처리하는 과정 중에 스레드가 변경될 수도 있다.\)
+
+
+
+책에 나온 예시코드를 보면
+
+![](.gitbook/assets/2021-06-27-2.00.11.png)
+
+리액터 컨텍스트는 컨텍스트의 데이터를 사용하려는 연산자의 위치보다 아래쪽에서 컨텍스트 인스턴스를 생성한다.
+
+\(.subscriberContext\(context -&gt; context.put\(...\)\) 부분\)
+
+
+
+사용하려는 연산자 내부에서는 Mono.subscriberContext\(\).map, .doOnNext 연산자를 이용하여 내부 컨텍스트 데이터에 접근할 수 있다.
+
+
+
+컨텍스트는 한번 put 되면 모든 이어져 있는 모든 스트림에서 이용가능하기 때문에 굉장히 유용하게 사용될 수 있다. 
+
+![](.gitbook/assets/2021-06-27-2.37.53.png)
+
+
+
+
+
+책에 나온 예시코드를 보면 리액터 컨텍스트는 업스트림에서는 다운스트림의 컨텍스트를 참조하여 데이터를 병합하는 것을 확인할 수 있다.
+
+![](.gitbook/assets/2021-06-27-2.38.51.png)
+
+
+
+![](.gitbook/assets/2021-06-27-2.39.48.png)
+
+
 
 ## 프로젝트 리액터의 내부 구조
 
 ### 매크로 퓨전
 
-### 마이크로 퓨
+주로 조립단계에서 연산자를 최적화시켜주는 작업\(연산자를 다른 연산자로 변환\)을 해준다. 
 
 
+
+앞절의 "조립단계" 에서 타입을 확인 후 내부 로직을 최적화 했었다.
+
+concatWith\(\) 내부 로직에서 FluxConcatArray 인 경우 concnatAdditionalSourceLast\(\) 메소드로 로직을 최적화함.
+
+![concatWith &#xD568;&#xC218;](.gitbook/assets/2021-06-20-5.05.28.png)
+
+
+
+책의 예시코드를 보면, flux.just\(\) 에 publishOn\(\) 을 호출하는데 publishOn\(\) 은 앞에 설명했다시피 큐를 생성하고 큐의 원소를 입출력을 위한 별도의 작업이 필요하다.
+
+![](.gitbook/assets/2021-06-27-3.05.10.png)
+
+
+
+그런데 publishOn\(\) 의 내부를 보면 아래와 같이 ScalarCallable 인 경우 FluxSubscribeOnValue\(\) 함수를 호출한다. 
+
+\(Flux.just\(\) 는 Fuseble.ScalarCallable 인터페이스를 구현하고 있음\)
+
+![](.gitbook/assets/2021-06-27-3.05.56.png)
+
+
+
+### 마이크로 퓨전
+
+마이크로 퓨전은 2~ 개이상의 연산자들이 서로 데이터를 요청/공유하는 런타임 과정에서의 최적화를 말한다.
+
+간단히 아래의 예시코드를 보면 filter 에서 조건을 충족하지 못할 경우 다시 request\(\) 메소드를 호출하여 데이터를 업스트림으로부터 받아온다.
+
+![](.gitbook/assets/2021-06-27-3.12.42.png)
+
+
+
+request\(\) 메소드는 volatile 필드 변수를 이용하는데 volatile 변수는 캐시를 이용하지 않기 때문에 작업 비용이 많이든다. 
+
+그래서 연산자 내부에 request\(\) 호출을 최소화 하기 위한 내부 최적화 작업을 마이크로 퓨전이라고 하는데, 위 코드에서 최대 10개의 데이터를 각각 필터를 거쳐서 1개 씩 다시 받아오는게 아닌 처음부터 모두 request\(\) 한다.
+
+\(대부분의 작업의 경우 just, range 등 특정 개수가 모두 정해져 있으므로... 이러한 마이크로 퓨전이 가능한듯 싶다.\)
+
+
+
+아래 실행 예시를 보면 데이터를 계속해서 request\(\) 해오는 방식이 아닌 Long,MAX\_VALUE 만큼 요청하여 pull 방식처럼 작동하는것을 볼 수 있다. 
+
+![Subscriber](.gitbook/assets/2021-06-27-3.30.00.png)
+
+![FluxFilter](.gitbook/assets/2021-06-27-3.30.06.png)
+
+![FluxRange](.gitbook/assets/2021-06-27-3.45.34.png)
+
+
+
+FluxRange 클래스의 fastPath\(\) 메소드로 들어온 경우 for\(\) 메소드 부분에서 20개 데이터를 모두 배치처리? 처럼 진행 하는것을 볼 수 있.
+
+![FluxRange&#xC758; fastPath\(\)](.gitbook/assets/2021-06-27-3.46.35.png)
+
+
+
+그렇기 때문에 FluxFilter 에는 request\(\) 를 호출하는 부분을 찾아볼수가 없. \(FluxRange 에서 알아서 tryOnNext 를 통해 데이터를 전달해주기 때문...\)
+
+![FluxFilter &#xC758; tryOnNext\(\)](.gitbook/assets/2021-06-27-3.46.53.png)
 

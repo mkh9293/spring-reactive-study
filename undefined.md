@@ -21,7 +21,7 @@ description: 리액터 프로젝트 심화학습
 
 
 
-조립의 또 다른 예시. \(내부적으로 최적화가 진행되는 경우\)
+조립 단계에서 최적화 예시. \(매크로 퓨\)
 
 concatWith 연산자로 각 변수들을 조합\(조립\)하여 출력한다.
 
@@ -81,7 +81,7 @@ filterFlux publisher 를 subscribe\(\) 하면
 
 구독 단계에서 subscriber 가 filter -&gt; map -&gt; source 순으로 전파된다고 했다.
 
-sourceFlux 까지 subscriber 가 전파되면 onSubscriber\(\) 메소드가 차례대로 호출되고 \(source -&gt; map -&gt; filter\)
+sourceFlux 까지 subscriber 가 전파되면 onSubscribe\(\) 메소드가 차례대로 호출되고 \(source -&gt; map -&gt; filter\)
 
 onSubscribe\(\) 메소드가 호출된 후 부터 request\(\) 메소드가 다시 역순으로 호출 된다 \(filter -&gt; map -&gt; source\) 
 
@@ -109,13 +109,15 @@ FilterSubscriber\(...\).onNext\("20"\) 부분에서는 구독자에게 20 데이
 
 멀티스레딩 환경에서 다른 워커로 작업을 실행할 수 있도록 제공해주는 연산자로
 
-publishOn, subscribeOn, parallel, Scheduler 가 있다.
+publishOn, subscribeOn, parallel, Scheduler 를 활용한다.
 
 
 
 ### publishOn 연산자
 
 런타임 실행의 일부를 다른 워커에서 실행되도록 한다.
+
+publishOn 은 onNext, onComplete, onError 메소드를 처리할 스레드를 지정
 
 ![](.gitbook/assets/2021-06-20-9.06.54.png)
 
@@ -149,13 +151,13 @@ publishOn\(\) 은 내부적으로 큐를 가지고 있고 해당 큐로 부터 �
 
 publishOn 은 onNext, onComplete, onError 메소드를 처리할 스레드를 지정하는 반면,
 
-subscribeOn 은 onSubscribe\(\), subscribe\(\) 를 처리할 스레드를 지정.
+subscribeOn 은 onSubscribe\(\) 를 처리할 스레드를 지정.
 
 subscribeOn 은 "구독 시간 워커와 함께 런타임 워커를 부분적으로 지정"
 
-구독 시간 워커 : onSubscribe\(\), subscribe\(\) 메소드를 처리할 스레드를 지정할때 사용.
+구독 시간 워커 : onSubscribe\(\) 메소드를 처리할 스레드를 지정할때 사용.
 
-런타임 워커를 부분적으로 지정 : 구독시간워커를 통해서 실행된 메소드로부터 데이터가 방출되는 시점의 onNext\(\) 는 구독시간워커의 스레드와 동일한 스레드에서 실행된다. 
+런타임 워커를 부분적으로 지정 : 구독시간워커를 통해서 실행된 메소드로부터 데이터가 방출되는 시점의 onNext\(\) 는 구독시간워커의 스레드와 동일한 스레드에서 실행된다. \(처음 데이터를 방출하는 시점이라고 보면됨.\)
 
 
 
@@ -191,8 +193,6 @@ parralle\(\) 연산자 적용 시, cpu 코어 수 만큼의 Flux 가 병렬로 �
 실제 동작은 runOn\(\) 연산자를 통해서 실행된다.
 
 
-
-Flux publisher 를 병렬적으로 처리하기 위해 사용한다. \(내부에서는 FluxPublishOn 클래스가 동작한다\)
 
 parrallel\(\) 연산자를 추가하기만 하면 병렬 동작 x. \(Flux 퍼블리셔를 ParrallelFlux 타입으로 변경시키고 하위 연산자들을 ParallelFlux 로 동작하도록 변경한다.\)
 
@@ -268,7 +268,7 @@ webflux 의 처리흐름은 Mono, Flux 로 부터 시작되며 작업 흐름이 
 
 
 
-컨텍스트는 한번 put 되면 모든 이어져 있는 모든 스트림에서 이용가능하기 때문에 굉장히 유용하게 사용될 수 있다. 
+컨텍스트는 한번 put 되면 이어져 있는 모든 스트림에서 이용가능하기 때문에 유용하게 사용될 수 있다. 
 
 ![](.gitbook/assets/2021-06-27-2.37.53.png)
 

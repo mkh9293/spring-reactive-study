@@ -334,7 +334,7 @@ request\(\) 메소드는 volatile 필드 변수를 이용하는데 volatile 변�
 
 
 
-아래 실행 예시를 보면 데이터를 계속해서 request\(\) 해오는 방식이 아닌 Long,MAX\_VALUE 만큼 요청하여 pull 방식처럼 작동하는것을 볼 수 있다. 
+아래 실행 예시를 보면 데이터를 계속해서 request\(\) 해오는 방식이 아닌 Long,MAX\_VALUE 만큼 요청하여 작동하는것을 볼 수 있다. 
 
 ![Subscriber](.gitbook/assets/2021-06-27-3.30.00.png)
 
@@ -344,7 +344,7 @@ request\(\) 메소드는 volatile 필드 변수를 이용하는데 volatile 변�
 
 
 
-FluxRange 클래스의 fastPath\(\) 메소드로 들어온 경우 for\(\) 메소드 부분에서 20개 데이터를 모두 배치처리? 처럼 진행 하는것을 볼 수 있.
+FluxRange 클래스의 fastPath\(\) 메소드로 들어온 경우 for\(\) 메소드 부분에서 20개 데이터를 모두 배치처리? 처럼 진행 하는것을 볼 수 있다.
 
 ![FluxRange&#xC758; fastPath\(\)](.gitbook/assets/2021-06-27-3.46.35.png)
 
@@ -353,4 +353,20 @@ FluxRange 클래스의 fastPath\(\) 메소드로 들어온 경우 for\(\) 메소
 그렇기 때문에 FluxFilter 에는 request\(\) 를 호출하는 부분을 찾아볼수가 없. \(FluxRange 에서 알아서 tryOnNext 를 통해 데이터를 전달해주기 때문...\)
 
 ![FluxFilter &#xC758; tryOnNext\(\)](.gitbook/assets/2021-06-27-3.46.53.png)
+
+
+
+tryOnNext 메서드는 ConditionalSubscriber 인터페이스에 존재하는 메서드로 "마이크로 퓨전" 유형의 인터페이스 라고 한다.
+
+![ConditionalSubscriber](.gitbook/assets/2021-06-27-9.52.56.png)
+
+
+
+ConditionalSubscriber 인지에 따라 RangeSubscription\(\), RangeSubscriptionConditional\(\) 을 선택하고 RangeSubscriptionConditional\(\) 은 ConditionalSubscriber 구독자 클래스를 이용한다.
+
+![FluxRange &#xC758; subscribe\(\) &#xB0B4;&#xBD80;](.gitbook/assets/2021-06-27-9.43.35.png)
+
+
+
+
 

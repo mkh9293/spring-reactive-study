@@ -21,7 +21,7 @@ description: 리액터 프로젝트 심화학습
 
 
 
-조립 단계에서 최적화 예시. \(매크로 퓨\)
+조립 단계에서 최적화 예시. \(매크로 퓨전\)
 
 concatWith 연산자로 각 변수들을 조합\(조립\)하여 출력한다.
 
@@ -48,6 +48,16 @@ FluxConcatArray\(FluxConcatArray\(FluxA, FluxB\), FluxC\) -&gt; **FluxConcatArra
 ### 
 
 ### 구독 단계
+
+
+
+참고.
+
+![](.gitbook/assets/2021-05-30-1.13.06.png)
+
+
+
+
 
 Publisher 를 구독할 때 발생.
 
@@ -93,15 +103,19 @@ ArraySubscription 의 request 까지 호출되면 실제 데이터 전송을 시
 
 
 
-아래 코드와 같이 각 단계\(Subscriber\) 마다 특정 조건을 거치면서 데이터가 흐른다.
+런타임 단계는 각 플로우들 거치면서 데이터가 흐른다.
 
-FilterSubscriber\(...\).onNext\("1"\) 부분에서 필터 처리 및 데이터 추가 호출\(request\(1\)\)
-
-FilterSubscriber\(...\).onNext\("20"\) 부분에서는 구독자에게 20 데이터 전송.
+1. 구독자는 ArraySubscription 을 통해 퍼블리셔에게 request\(10\) 호출하여 데이터 요.
+2. 맵구독자는 데이터를 하나 받아서 String 으로 변환. \(onNext\(1\) 부분\) 
+3. 필터구독자는 String 으로 변환된 "1" 값을 받아서 필터처리
+4. 필터를 거치지 못했으므로 구독자는 subscription 을 통해 퍼블리셔에게 새로운 데이터 요.
+5. ...
 
 
 
 ![](.gitbook/assets/2021-06-20-7.33.57.png)
+
+
 
 
 
@@ -168,10 +182,10 @@ subscribeOn 은 "구독 시간 워커와 함께 런타임 워커를 부분적으
 {% hint style="info" %}
 참고로 subscribeOn\(\) 메소드는 업스트림에 대해서도 영향을 끼친다. 
 
-\(subscribeOn 보다 위에 조립된 연산자들에게도 영향을 끼친다는뜻.\) 
+\(subscribeOn 보다 위에 조립된 연산자들에게도 영향을 끼친다는뜻.\)
 {% endhint %}
 
-
+ 
 
 결과
 
@@ -184,11 +198,37 @@ subscribeOn 은 "구독 시간 워커와 함께 런타임 워커를 부분적으
 
 
 
+% 그럼 subscribeOn\(\) 연산자가 여러개 지정되어 있다면 어떻게 되는것일까?
+
+소스와 가장 가까운 곳에 있는 subscribeOn\(\) 메소드가 적용된다고 함.
+
+
+
+어떤 사이트의 내용 1
+
+![](.gitbook/assets/2021-07-05-11.22.13.png)
+
+
+
+내용 2
+
+![](.gitbook/assets/2021-07-05-11.25.28.png)
+
+
+
+내용 2의 글을 작성한 사람이 테스트 한 내용. \(single 스레드에서만 실행된것을 확인할 수 있다.\)
+
+![](.gitbook/assets/2021-07-05-11.20.36.png)
+
+### 
+
+### 
+
 ### parallel 연산자
 
 ![parrallel &#xC5F0;&#xC0B0;&#xC790;](.gitbook/assets/2021-06-26-10.21.50.png)
 
-parralle\(\) 연산자 적용 시, cpu 코어 수 만큼의 Flux 가 병렬로 생성되고 \(ParrallelFlux 타입으로 변환됨.\)
+parralle\(\) 연산자 적용 시, 디폴트로 cpu 코어 수 만큼의 Flux 가 병렬로 생성되고 \(ParrallelFlux 타입으로 변환됨.\)
 
 실제 동작은 runOn\(\) 연산자를 통해서 실행된다.
 
@@ -254,7 +294,7 @@ webflux 의 처리흐름은 Mono, Flux 로 부터 시작되며 작업 흐름이 
 
 
 
-책에 나온 예시코드를 보면
+책에 나온 예시코드를 보면 **Mono.subscriberContext\(\).map**, .**doOnNext** 연산자를 이용하여 내부 컨텍스트 데이터에 접근할 수 있다.
 
 ![](.gitbook/assets/2021-06-27-2.00.11.png)
 
@@ -263,8 +303,6 @@ webflux 의 처리흐름은 Mono, Flux 로 부터 시작되며 작업 흐름이 
 \(.subscriberContext\(context -&gt; context.put\(...\)\) 부분\)
 
 
-
-사용하려는 연산자 내부에서는 Mono.subscriberContext\(\).map, .doOnNext 연산자를 이용하여 내부 컨텍스트 데이터에 접근할 수 있다.
 
 
 
@@ -276,7 +314,7 @@ webflux 의 처리흐름은 Mono, Flux 로 부터 시작되며 작업 흐름이 
 
 
 
-책에 나온 예시코드를 보면 리액터 컨텍스트는 업스트림에서는 다운스트림의 컨텍스트를 참조하여 데이터를 병합하는 것을 확인할 수 있다.
+책에 나온 예시코드를 보면 리액터 컨텍스트는 업스트림에서 다운스트림의 컨텍스트를 참조하여 데이터를 병합하는 것을 확인할 수 있다.
 
 ![](.gitbook/assets/2021-06-27-2.38.51.png)
 
@@ -326,7 +364,7 @@ concatWith\(\) 내부 로직에서 FluxConcatArray 인 경우 concnatAdditionalS
 
 
 
-request\(\) 메소드는 volatile 필드 변수를 이용하는데 volatile 변수는 캐시를 이용하지 않기 때문에 작업 비용이 많이든다. 
+request\(\) 메소드 내부에서는 volatile 필드 변수를 이용하는데 volatile 변수는 캐시를 이용하지 않기 때문에 작업 비용이 많이든다. 
 
 그래서 연산자 내부에 request\(\) 호출을 최소화 하기 위한 내부 최적화 작업을 마이크로 퓨전이라고 하는데, 위 코드에서 최대 10개의 데이터를 각각 필터를 거쳐서 1개 씩 다시 받아오는게 아닌 처음부터 모두 request\(\) 한다.
 
@@ -346,11 +384,13 @@ request\(\) 메소드는 volatile 필드 변수를 이용하는데 volatile 변�
 
 FluxRange 클래스의 fastPath\(\) 메소드로 들어온 경우 for\(\) 메소드 부분에서 20개 데이터를 모두 배치처리? 처럼 진행 하는것을 볼 수 있다.
 
+\(참고로 FluxRange 는 퍼블리셔 이므로 tryOnNext\(\) 를 호출하여 구독자에게 데이터를 전송하는 것임.\)
+
 ![FluxRange&#xC758; fastPath\(\)](.gitbook/assets/2021-06-27-3.46.35.png)
 
 
 
-그렇기 때문에 FluxFilter 에는 request\(\) 를 호출하는 부분을 찾아볼수가 없. \(FluxRange 에서 알아서 tryOnNext 를 통해 데이터를 전달해주기 때문...\)
+그렇기 때문에 FluxFilter 에는 request\(\) 를 호출하는 부분을 찾아볼수가 없다. \(FluxRange 에서 알아서 tryOnNext 를 통해 데이터를 전달해주기 때문...\)
 
 ![FluxFilter &#xC758; tryOnNext\(\)](.gitbook/assets/2021-06-27-3.46.53.png)
 
@@ -362,11 +402,17 @@ tryOnNext 메서드는 ConditionalSubscriber 인터페이스에 존재하는 메
 
 
 
-ConditionalSubscriber 인지에 따라 RangeSubscription\(\), RangeSubscriptionConditional\(\) 을 선택하고 RangeSubscriptionConditional\(\) 은 ConditionalSubscriber 구독자 클래스를 이용한다.
+ConditionalSubscriber 인지에 따라 RangeSubscription\(\) **or** RangeSubscriptionConditional\(\) 을 둘중에 선택하고 RangeSubscriptionConditional\(\) 내부에서는 tryOnNext\(\) 메서드를 활용하게 된다.
 
 ![FluxRange &#xC758; subscribe\(\) &#xB0B4;&#xBD80;](.gitbook/assets/2021-06-27-9.43.35.png)
 
 
+
+참고
+
+{% embed url="https://spring.io/blog/2019/12/13/flight-of-the-flux-3-hopping-threads-and-schedulers" %}
+
+{% embed url="https://akarnokd.blogspot.com/2017/11/when-multiple-subscribeons-do-have.html" %}
 
 
 

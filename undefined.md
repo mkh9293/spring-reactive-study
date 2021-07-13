@@ -12,8 +12,12 @@ description: 리액터 프로젝트 심화학습
 
 ![&#xBE4C;&#xB354;&#xD328;&#xD134;&#xACFC; &#xBE44;&#xC2B7;&#xD55C; &#xD615;&#xD0DC;&#xB85C; &#xC870;&#xB9BD;&#xD558;&#xC5EC; &#xC0AC;&#xC6A9;](.gitbook/assets/2021-06-20-5.09.08.png)
 
+
+
+**빌더 패턴과 차이점**
+
 빌더 패턴은 하나의 객체에 대해 새로운 메서드가 추가됨과 동시에  객체의 데이터가 변경되지만,  
-리액터에서는 불변으로 메서드\(연산자\)가 추가되어도 객체의 내용이 변하지  않고 새로운 객체가 생성된다.
+리액터에서는 **불변**으로 메서드\(연산자\)가 추가되어도 객체의 내용이 변하지  않고 **새로운 객체**가 생성된다.
 
 ![&#xC870;&#xB9BD;&#xB2E8;&#xACC4; &#xC608;&#xC2DC;&#xCF54;&#xB4DC;](.gitbook/assets/2021-06-14-10.28.30.png)
 
@@ -51,31 +55,20 @@ FluxConcatArray\(FluxConcatArray\(FluxA, FluxB\), FluxC\) -&gt; **FluxConcatArra
 
 
 
-참고.
+리액티브 동작방식 그 참고.
 
 ![](.gitbook/assets/2021-05-30-1.13.06.png)
 
 
 
+![&#xAD6C;&#xB3C5; &#xC608;&#xC2DC;&#xCF54;&#xB4DC;](.gitbook/assets/2021-06-15-11.49.34.png)
 
+구독 순서는 다음과 같다.  \(제일 밑에서부터 구독 시작됨\)
 
-Publisher 를 구독할 때 발생.
-
-![](.gitbook/assets/2021-06-15-11.44.41.png)
-
-
-
-publisher 들\(sourceFlux, mapFlux, filterFlux\) 연결되어 subscriber 가 전달되는 형식.
-
-![publisher &#xAC00; &#xC804;&#xB2EC;&#xB428;.](.gitbook/assets/2021-06-15-11.49.34.png)
-
-구독 순서는 다음과 같다. 
-
-filterFlux publisher 를 subscribe\(\) 하면
-
-1. mapFlux publisher 의 subscribe\(\) 메소드가 호출되고 \(실제 publisher는 FluxFilterFuseable\)
-2. sourceFlux publisher 의 subscribe\(\) 메소드가 호출 \(FluxMapFuseable publisher\)
-3. Flux publisher 의 subscribe\(\) 메소드가 호출 \(FluxArray publisher\)
+1. filterFlux publisher 를 subscribe\(\) 하면
+2. mapFlux publisher 의 subscribe\(\) 메소드가 호출되고 \(실제 publisher는 FluxFilterFuseable\)
+3. sourceFlux publisher 의 subscribe\(\) 메소드가 호출 \(FluxMapFuseable publisher\)
+4. Flux publisher 의 subscribe\(\) 메소드가 호출 \(FluxArray publisher\)
 
 
 
@@ -83,15 +76,13 @@ filterFlux publisher 를 subscribe\(\) 하면
 
 ![filter -&amp;gt; map -&amp;gt; array &#xC21C;&#xC73C;&#xB85C; subscriber &#xC804;&#xD30C;](.gitbook/assets/2021-06-16-12.07.03.png)
 
- 최종적으로 마지막 연산자까지 subscriber 를 전달 완료한 경우에 데이터를 송신을 위한 데이터 요청 메소드를\(request\) 호출한다.
-
 
 
 ### 런타임 단계
 
-구독 단계에서 subscriber 가 filter -&gt; map -&gt; source 순으로 전파된다고 했다.
+구독 단계에서 subscribe\(\) 가 filter -&gt; map -&gt; source 순으로 호출된다고 했다.
 
-sourceFlux 까지 subscriber 가 전파되면 onSubscribe\(\) 메소드가 차례대로 호출되고 \(source -&gt; map -&gt; filter\)
+sourceFlux 까지 subscribe\(\) 가 호출 완되면 onSubscribe\(\) 메소드가 차례대로 호출되고 \(source -&gt; map -&gt; filter\)
 
 onSubscribe\(\) 메소드가 호출된 후 부터 request\(\) 메소드가 다시 역순으로 호출 된다 \(filter -&gt; map -&gt; source\) 
 
@@ -105,17 +96,19 @@ ArraySubscription 의 request 까지 호출되면 실제 데이터 전송을 시
 
 런타임 단계는 각 플로우들 거치면서 데이터가 흐른다.
 
-1. 구독자는 ArraySubscription 을 통해 퍼블리셔에게 request\(10\) 호출하여 데이터 요.
+![&#xC608;&#xC2DC;&#xCF54;&#xB4DC;](.gitbook/assets/2021-07-13-10.44.28%20%281%29.png)
+
+
+
+![&#xC608;&#xC2DC;&#xCF54;&#xB4DC; &#xD50C;&#xB85C;&#xC6B0;](.gitbook/assets/2021-06-20-7.33.57.png)
+
+플로
+
+1. 구독자는 ArraySubscription 을 통해 퍼블리셔에게 request\(10\) 호출하여 데이터 요청.
 2. 맵구독자는 데이터를 하나 받아서 String 으로 변환. \(onNext\(1\) 부분\) 
 3. 필터구독자는 String 으로 변환된 "1" 값을 받아서 필터처리
 4. 필터를 거치지 못했으므로 구독자는 subscription 을 통해 퍼블리셔에게 새로운 데이터 요.
 5. ...
-
-
-
-![](.gitbook/assets/2021-06-20-7.33.57.png)
-
-
 
 
 
@@ -135,11 +128,17 @@ publishOn 은 onNext, onComplete, onError 메소드를 처리할 스레드를 �
 
 ![](.gitbook/assets/2021-06-20-9.06.54.png)
 
+![&#xACB0;&#xACFC;](.gitbook/assets/2021-07-14-12.55.44.png)
+
 parallel-scheduler 라는 이름의 스케줄러를 만들고 4개의 스레드를 생성.
 
 publishOn\(s\) 연산자 부터는 parallel-scheduler 스케쥴러에서 스레드를 가져다가 작업을 진행한다.
 
 
+
+![](.gitbook/assets/2021-07-14-12.57.35.png)
+
+![&#xACB0;&#xACFC;](.gitbook/assets/2021-07-14-12.57.49.png)
 
 publishOn\(\) 은 내부적으로 큐를 가지고 있고 해당 큐로 부터 데이터를 꺼내와 작업을 처리하기 때문에 처리 순서가 보장된다.
 
@@ -237,12 +236,6 @@ parralle\(\) 연산자 적용 시, 디폴트로 cpu 코어 수 만큼의 Flux �
 parrallel\(\) 연산자를 추가하기만 하면 병렬 동작 x. \(Flux 퍼블리셔를 ParrallelFlux 타입으로 변경시키고 하위 연산자들을 ParallelFlux 로 동작하도록 변경한다.\)
 
 runOn\(\) 연산자를 추가해야 병렬적으로 동작하기 시작. \(ParrallelFlux 를 상속받은 ParrallelRunOn 퍼블리셔가 실제 병렬동작을 실행함\)
-
-
-
-ParallelRunOn 퍼블리셔의 subscribe\(\) 메소드 내부에서 전달받은 scheduler 를 전달.
-
-![](.gitbook/assets/2021-06-26-10.38.13.png)
 
 
 

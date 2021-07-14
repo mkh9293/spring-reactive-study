@@ -345,6 +345,8 @@ concatWith\(\) 내부 로직에서 FluxConcatArray 인 경우 concnatAdditionalS
 
 ![](.gitbook/assets/2021-06-27-3.05.56.png)
 
+원소가 한개인 경우에는 큐 관리가 필요한 publishOn 을 생성하지 않고, subscribeOn 을 내부적으로 생성한다.
+
 
 
 ### 마이크로 퓨전
